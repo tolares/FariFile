@@ -21,6 +21,8 @@ struct fari {
         char **headers;
 };
 
+
+char* concat(const char* s1, const char* s2);
 /*
  * Returns the number of bytes read in buffer from filename
  * Returns < 0 if error
