@@ -13,7 +13,7 @@
 
 int main(){
    
-    char* buffer = NULL;
+    char* buffer = malloc(1024);
     int size = fari_read("/Users/henry/Documents/Lab/RS/RS Project/src/resources/farifile", buffer);
     printf("%d\n", size);
     return 0;

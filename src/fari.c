@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "fari.h"
 
 
 char* concat(const char *s1, const char *s2)
@@ -21,6 +22,19 @@ char* concat(const char *s1, const char *s2)
     return result;
 }
 
+struct fari* fari_init()
+{
+    struct fari* fari = malloc(sizeof(struct fari*));
+    fari->executable = NULL;
+    fari->flags = NULL;
+    fari->libs = NULL;
+    fari->nb_headers = 0;
+    fari->nb_sources = 0;
+    fari->headers = NULL;
+    fari->sources = NULL;
+    
+    return fari;
+}
 
 int fari_read(const char *filename, char *buffer){
     int bytes_read;
@@ -46,5 +60,6 @@ int fari_read(const char *filename, char *buffer){
         result = concat(result, line_buf);
         
     }
+    strcpy(buffer, result);
     return bytes_read;
 }

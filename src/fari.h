@@ -31,6 +31,8 @@ int fari_read(const char *filename, char *buffer);
 
 struct fari *fari_parse(const char *buffer);
 
+struct fari *fari_init();
+
 int fari_compile(const struct fari *fari);
 
 void fari_free(struct fari *fari);
