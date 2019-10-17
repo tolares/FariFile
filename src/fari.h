@@ -1,40 +1,31 @@
+/*
+ * fari.h
+ * RS project
+ *
+ * Henry Lagarde & Louis Jacotot
+ * 14/10/2019
+ */
+
 #ifndef _FARI_H
 #define _FARI_H
 
-/*
- * S'il y a plusieurs lignes F et B, on concatène ?
- * Passe-t-on les headers à gcc ou juste pour vérifier la date ?
- * S'il y a plusieurs fichiers .c sur la même ligne C, doit-on produire
- * plusieurs .o ou un seul ?
- * Un fichier header x.h doit-il s'appliquer uniquement à x.c ou à tous les
- * autres fichiers .c ?
- * Comparer la date du .h à quel fichier .o ? le plus ancien ? le plus récent ?
- */
+#define FARI_PATH_MAX 4096 /* TODO: POSIX ? */
 
 struct fari {
-        unsigned int nb_sources;
-        unsigned int nb_headers;
-        char *executable;
-        char *flags;
-        char *libs;
-        char **sources;
-        char **headers;
+    char *executable;
+    char *flags;
+    char *libs;
+
+    int sources_count;
+    int headers_count;
+    char **sources;
+    char **headers;
 };
 
-
-char* concat(const char* s1, const char* s2);
-/*
- * Returns the number of bytes read in buffer from filename
- * Returns < 0 if error
- */
-int fari_read(const char *filename, char *buffer);
-
-struct fari *fari_parse(const char *buffer);
-
-int fari_compile(const struct fari *fari);
-
-struct fari *fari_init();
-
+struct fari *fari_create();
 void fari_free(struct fari *fari);
+/* counts bytes read */
+int fari_read(const char *filename, char **buffer);
+int fari_analyse(struct fari *fari, const char *buffer);
 
 #endif /* _FARI_H */
