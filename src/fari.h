@@ -21,19 +21,18 @@ struct fari {
         char **headers;
 };
 
-
-char* concat(const char* s1, const char* s2);
+ 
 /*
  * Returns the number of bytes read in buffer from filename
  * Returns < 0 if error
  */
-int fari_read(const char *filename, char *buffer);
+int fari_read(const char *filename, char **buffer);
 
 struct fari *fari_parse(const char *buffer);
 
 int fari_compile(const struct fari *fari);
 
-struct fari *fari_init();
+struct fari *fari_create();
 
 void fari_free(struct fari *fari);
 
