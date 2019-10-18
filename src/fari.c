@@ -176,15 +176,52 @@ static void field_concat(char **field, const char *str)
         strcpy((*field) + len_field + 1, str); /* TODO: strncpy ? */
     }
 }
+static void field_add(char ***field, const char *str, int size)
+{
+    int len_str;
+
+    len_str = strlen(str);      /* TODO: strnlen ? */
+
+    if (NULL == *field) {
+        *field = malloc(sizeof(char*));
+        (*field)[size] = malloc((len_str + 1) * sizeof(char));
+        strcpy(*field[size], str);
+    } else {
+        *field = realloc(*field,sizeof(char*) * (size+1));
+        (*field)[size] = malloc((len_str + 1) * sizeof(char));
+        strcpy((*field)[size], str);
+    }
+}
+
+static char* fari_list_check(char*** field,const int size, char* extension)
+{
+    char* pos;
+    char* file;
+    file = "";
+    for (int i = 0; i < size; ++i) {
+        pos = strchr((*field)[i], '.');
+
+        if(pos != NULL && strcmp(pos, extension)){
+            file = (*field)[i];
+            return file;
+        }
+    }
+    return file;
+}
 
 int fari_analyse(struct fari *fari, const char *buffer)
 {
     int seen_executable;
     int line, line_pos;
+    int sources_count, headers_count;
     int pos;
     char c;
     char str[FARI_PATH_MAX];
+    char* error;
 
+    error = "";
+    sources_count = 0;
+    headers_count = 0;
     seen_executable = 0;
     line = 1;
     line_pos = 0;
@@ -199,7 +236,19 @@ int fari_analyse(struct fari *fari, const char *buffer)
                     field_concat(&fari->libs, str);
                 }
                 break;
-            case 'C': break;
+            case 'C':
+                while(buffer[pos] != '\n'){
+                    read_spaces(buffer, &pos);
+                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
+                    field_add(&fari->sources, str, sources_count++);
+                }
+                fari->sources_count = sources_count;
+                error = fari_list_check(&fari->sources,fari->sources_count, ".c");
+                if(strcmp(error, "")){
+                    fprintf(stderr, "fari file %s contains bad extensions in 'C'\n", error);
+                    return 1;
+                }
+                break;
             case 'E':
                 if (seen_executable) {
                     fprintf(stderr, "fari file contains 'E' twice\n");
@@ -222,7 +271,19 @@ int fari_analyse(struct fari *fari, const char *buffer)
                     field_concat(&fari->flags, str);
                 }
                 break;
-            case 'H': break;
+            case 'H':
+                while(buffer[pos] != '\n'){
+                    read_spaces(buffer, &pos);
+                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
+                    field_add(&fari->headers, str, headers_count++);
+                }
+                fari->headers_count = headers_count;
+                error = fari_list_check(&fari->headers,fari->headers_count, ".h");
+                if(strcmp(error, "")){
+                    fprintf(stderr, "fari file %s contains bad extensions in 'H'\n", error);
+                    return 1;
+                }
+                break;
             default: break;
         }
         read_until_crlf(buffer, &pos);

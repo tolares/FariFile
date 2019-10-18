@@ -1,3 +1,9 @@
 # My first fari file :)
 E my_really_great_program
-F -fixmycode
+C fari.c f3.c f4.c
+C f2.c
+H fari.h fari2.h
+H f.h
+H fZ.h
+F -fixmycode -Os
+B -lib -math

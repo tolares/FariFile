@@ -47,6 +47,14 @@ int main(int argc, char **argv)
 
     /* XXX: debug */
     printf("executable : \"%s\"\n", fari->executable);
+    printf("librairies : %s \n", fari->libs);
+    printf("flags : %s \n", fari->flags);
+    for (int i = 0; i < fari->sources_count; ++i) {
+        printf("%d sources : %s \n",i+1, (fari->sources)[i]);
+    }
+    for (int i = 0; i < fari->headers_count; ++i) {
+        printf("%d headers : %s \n",i+1, (fari->headers)[i]);
+    }
     /* XXX: end of debug */
 
 free_all:

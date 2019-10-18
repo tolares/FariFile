@@ -1,0 +1,1 @@
+add_executable(RS fari.c fari.h main.c)
