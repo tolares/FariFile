@@ -192,7 +192,13 @@ int fari_analyse(struct fari *fari, const char *buffer)
 
     while (!read_token(&c, buffer, &pos)) {
         switch (c) {
-            case 'B': break;
+            case 'B':
+                while(buffer[pos] != '\n'){
+                    read_spaces(buffer, &pos);
+                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
+                    field_concat(&fari->libs, str);
+                }
+                break;
             case 'C': break;
             case 'E':
                 if (seen_executable) {
@@ -209,7 +215,13 @@ int fari_analyse(struct fari *fari, const char *buffer)
                 }
                 field_concat(&fari->executable, str);
                 break;
-            case 'F': break;
+            case 'F':
+                while(buffer[pos] != '\n'){
+                    read_spaces(buffer, &pos);
+                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
+                    field_concat(&fari->flags, str);
+                }
+                break;
             case 'H': break;
             default: break;
         }

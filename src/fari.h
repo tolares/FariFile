@@ -15,7 +15,6 @@ struct fari {
     char *executable;
     char *flags;
     char *libs;
-
     int sources_count;
     int headers_count;
     char **sources;
