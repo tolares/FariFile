@@ -1,0 +1,7 @@
+# My first fari file :)
+E my_really_great_program
+C f1.c
+H f1.h
+F -Wall -Wextra
+B -lm
+F -pipe -Os

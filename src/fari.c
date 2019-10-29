@@ -13,17 +13,14 @@ gcc -std=c90 -pedantic-errors -Wall -Wextra -Wswitch-default -Wwrite-strings \
 valgrind --tool=memcheck -s ./main resources/farifile
 */
 
-/*
- * XXX: Questions
- * Peut-on écrire : `E "un programme en plusieurs mots"` ?
- */
-
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "fari.h"
+#include "file.h"
+#include "fork.h"
 
 struct fari *fari_create()
 {
@@ -35,12 +32,31 @@ struct fari *fari_create()
 
 void fari_free(struct fari *fari)
 {
+    int i;
+
     if (NULL == fari)
         return;
-    free(fari->headers);
-    free(fari->sources);
-    free(fari->libs);
-    free(fari->flags);
+
+    if (NULL != fari->flags) {
+        for (i = 0; i < fari->flags_count; ++i)
+            free(fari->flags[i]);
+        free(fari->flags);
+    }
+    if (NULL != fari->libs) {
+        for (i = 0; i < fari->libs_count; ++i)
+            free(fari->libs[i]);
+        free(fari->libs);
+    }
+    if (NULL != fari->headers) {
+        for (i = 0; i < fari->headers_count; ++i)
+            free(fari->headers[i]);
+        free(fari->headers);
+    }
+    if (NULL != fari->sources) {
+        for (i = 0; i < fari->sources_count; ++i)
+            free(fari->sources[i]);
+        free(fari->sources);
+    }
     free(fari->executable);
     free(fari);
 }
@@ -56,7 +72,7 @@ int fari_read(const char *filename, char **buffer)
     file = fopen(filename, "r");
     if (NULL == file) {
         ret = -1;
-        fprintf(stderr, "fari filename does not exist\n");
+        fprintf(stderr, "fari file does not exist\n");
         goto exit;
     }
 
@@ -159,69 +175,46 @@ static void read_spaces(const char *buffer, int *pos)
     (*pos)--; /* go back */
 }
 
-static void field_concat(char **field, const char *str)
+static void field_set(char **field, const char *str)
 {
-    int len_field;
-    int len_str;
+    int str_len;
 
-    len_str = strlen(str);      /* TODO: strnlen ? */
-
-    if (NULL == *field) {
-        *field = malloc((len_str + 1) * sizeof(char));
-        strcpy(*field, str);
-    } else {
-        len_field = strlen(*field); /* TODO: strnlen ? */
-        *field = realloc(*field, len_field + len_str + 2); /* '\x0a' + '\0' */
-        (*field)[len_field] = '\x20'; /* space separator */
-        strcpy((*field) + len_field + 1, str); /* TODO: strncpy ? */
-    }
+    str_len = strlen(str);
+    *field = malloc((str_len + 1) * sizeof(char));
+    strcpy(*field, str);
 }
-static void field_add(char ***field, const char *str, int size)
+
+static void field_add(char ***field, int field_size, const char *str)
 {
     int len_str;
 
     len_str = strlen(str);      /* TODO: strnlen ? */
 
     if (NULL == *field) {
-        *field = malloc(sizeof(char*));
-        (*field)[size] = malloc((len_str + 1) * sizeof(char));
-        strcpy(*field[size], str);
+        *field = malloc(sizeof(char *));
+        if (NULL == *field)
+                return;
+        (*field)[field_size] = malloc((len_str + 1) * sizeof(char));
+        if (NULL == (*field)[field_size])
+                return;
+        strcpy(*field[field_size], str);
     } else {
-        *field = realloc(*field,sizeof(char*) * (size+1));
-        (*field)[size] = malloc((len_str + 1) * sizeof(char));
-        strcpy((*field)[size], str);
+        *field = realloc(*field, (field_size + 1) * sizeof(char *));
+        if (NULL == *field)
+                return;
+        (*field)[field_size] = malloc((len_str + 1) * sizeof(char));
+        strcpy((*field)[field_size], str);
     }
-}
-
-static char* fari_list_check(char*** field,const int size, char* extension)
-{
-    char* pos;
-    char* file;
-    file = "";
-    for (int i = 0; i < size; ++i) {
-        pos = strchr((*field)[i], '.');
-
-        if(pos != NULL && strcmp(pos, extension)){
-            file = (*field)[i];
-            return file;
-        }
-    }
-    return file;
 }
 
 int fari_analyse(struct fari *fari, const char *buffer)
 {
     int seen_executable;
     int line, line_pos;
-    int sources_count, headers_count;
     int pos;
     char c;
     char str[FARI_PATH_MAX];
-    char* error;
 
-    error = "";
-    sources_count = 0;
-    headers_count = 0;
     seen_executable = 0;
     line = 1;
     line_pos = 0;
@@ -230,23 +223,22 @@ int fari_analyse(struct fari *fari, const char *buffer)
     while (!read_token(&c, buffer, &pos)) {
         switch (c) {
             case 'B':
-                while(buffer[pos] != '\n'){
+                while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
-                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
-                    field_concat(&fari->libs, str);
+                    read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
+                    if ('\0' == str[0]) {
+                        fprintf(stderr, "fari file syntax error\n");
+                        fprintf(stderr, "\t-> argument expected for token 'B'\n");
+                        return 1;
+                    }
+                    field_add(&fari->libs, fari->libs_count++, str);
                 }
                 break;
             case 'C':
-                while(buffer[pos] != '\n'){
+                while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
-                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
-                    field_add(&fari->sources, str, sources_count++);
-                }
-                fari->sources_count = sources_count;
-                error = fari_list_check(&fari->sources,fari->sources_count, ".c");
-                if(strcmp(error, "")){
-                    fprintf(stderr, "fari file %s contains bad extensions in 'C'\n", error);
-                    return 1;
+                    read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
+                    field_add(&fari->sources, fari->sources_count++, str);
                 }
                 break;
             case 'E':
@@ -256,32 +248,31 @@ int fari_analyse(struct fari *fari, const char *buffer)
                 }
                 seen_executable = 1;
                 read_spaces(buffer, &pos);
-                read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
+                read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
                 if ('\0' == str[0]) {
                     fprintf(stderr, "fari file syntax error\n");
                     fprintf(stderr, "\t-> argument expected for token 'E'\n");
                     return 1;
                 }
-                field_concat(&fari->executable, str);
+                field_set(&fari->executable, str);
                 break;
             case 'F':
-                while(buffer[pos] != '\n'){
+                while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
-                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
-                    field_concat(&fari->flags, str);
+                    read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
+                    if ('\0' == str[0]) {
+                        fprintf(stderr, "fari file syntax error\n");
+                        fprintf(stderr, "\t-> argument expected for token 'F'\n");
+                        return 1;
+                    }
+                    field_add(&fari->flags, fari->flags_count++, str);
                 }
                 break;
             case 'H':
-                while(buffer[pos] != '\n'){
+                while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
-                    read_str(&str[0], sizeof(str)/sizeof(char), buffer, &pos);
-                    field_add(&fari->headers, str, headers_count++);
-                }
-                fari->headers_count = headers_count;
-                error = fari_list_check(&fari->headers,fari->headers_count, ".h");
-                if(strcmp(error, "")){
-                    fprintf(stderr, "fari file %s contains bad extensions in 'H'\n", error);
-                    return 1;
+                    read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
+                    field_add(&fari->headers, fari->headers_count++, str);
                 }
                 break;
             default: break;
@@ -307,6 +298,139 @@ int fari_analyse(struct fari *fari, const char *buffer)
         fprintf(stderr, "fari file does not contain 'E'\n");
         return 1;
     }
+
+    return 0;
+}
+
+int fari_check(struct fari *fari)
+{
+    int i;
+
+    for (i = 0; i < fari->sources_count; ++i) {
+        if (!file_exists(fari->sources[i])) {
+            fprintf(stderr, "file \"%s\" does not exist\n", fari->sources[i]);
+            return 1;
+        }
+        if (!file_has_extension(fari->sources[i], "c")) {
+            fprintf(stderr, "file \"%s\" is not a source file\n", fari->sources[i]);
+            return 1;
+        }
+    }
+    for (i = 0; i < fari->headers_count; ++i) {
+        if (!file_exists(fari->headers[i])) {
+            fprintf(stderr, "file \"%s\" does not exist\n", fari->headers[i]);
+            return 1;
+        }
+        if (!file_has_extension(fari->headers[i], "h")) {
+            fprintf(stderr, "file \"%s\" is not a header file\n", fari->headers[i]);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int fari_compile(struct fari *fari)
+{
+    char *newest_header;
+    char *oldest_obj;
+    int recompile_all;
+    const char *filename_c;
+    char *filename_o;
+    char *newest_obj;
+    int objs_count;
+    char **objs;
+    int i;
+    int status;
+
+    newest_header = NULL;
+    oldest_obj = NULL;
+    recompile_all = 0;
+    newest_obj = NULL;
+
+    for (i = 0; i < fari->headers_count; ++i) {
+        if (!newest_header || file_newer_than(fari->headers[i], newest_header))
+            newest_header = fari->headers[i];
+    }
+    for (i = 0; i < fari->sources_count; ++i) {
+        filename_c = fari->sources[i];
+        filename_o = file_change_extension(filename_c, "o");
+        if (!oldest_obj || file_newer_than(oldest_obj, filename_o)) {
+            free(oldest_obj);
+            oldest_obj = filename_o;
+        } else {
+            free(filename_o);
+        }
+    }
+    if (newest_header && oldest_obj && file_newer_than(newest_header, oldest_obj))
+        recompile_all = 1;
+
+    for (i = 0; i < fari->sources_count; ++i) {
+        filename_c = fari->sources[i];
+        filename_o = file_change_extension(filename_c, "o");
+        if (NULL == filename_o)
+            return 1;
+        if (!file_exists(filename_o) ||
+            file_newer_than(filename_c, filename_o) ||
+            recompile_all) {
+            /* recompile */
+            printf("DEBUG | recompiling %s <- %s\n", filename_o, filename_c);
+            status = fork_gcc(fari->flags_count, fari->flags,
+                                  filename_c, filename_o);
+            printf("\tstatus <- %d\n", status);
+            if (status) {
+                fprintf(stderr, "compilation failed\n");
+                free(filename_o);
+                free(oldest_obj);
+                return 1;
+            }
+        }
+        free(filename_o); /* bof... */
+    }
+
+    free(oldest_obj);
+
+    for (i = 0; i < fari->sources_count; ++i) {
+        filename_c = fari->sources[i];
+        filename_o = file_change_extension(filename_c, "o");
+        if (!newest_obj || file_newer_than(filename_o, newest_obj)) {
+            free(newest_obj);
+            newest_obj = filename_o;
+        } else {
+            free(filename_o);
+        }
+    }
+
+    if (!file_exists(fari->executable) ||
+        file_newer_than(newest_obj, fari->executable)) {
+        /* relink */
+        objs_count = fari->sources_count;
+        objs = malloc(fari->sources_count * sizeof(char *));
+        if (!objs) {
+            return 1;
+        }
+        for (i = 0; i < fari->sources_count; ++i) {
+            filename_c = fari->sources[i];
+            filename_o = file_change_extension(filename_c, "o");
+            objs[i] = filename_o;
+        }
+        printf("DEBUG | relinking %s\n", fari->executable);
+        status = fork_ld(fari->flags_count, fari->flags,
+                         fari->libs_count, fari->libs,
+                         fari->executable,
+                         objs_count, objs);
+        printf("\tstatus <- %d\n", status);
+        for (i = 0; i < objs_count; ++i)
+            free(objs[i]);
+        free(objs);
+        if (status) {
+            fprintf(stderr, "linking failed\n");
+            free(newest_obj);
+            return 1;
+        }
+    }
+
+    free(newest_obj);
 
     return 0;
 }

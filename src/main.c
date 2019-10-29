@@ -15,16 +15,20 @@
 int main(int argc, char **argv)
 {
     int ret;
+    const char *filename = "farifile";
     struct fari *fari;
     char *buffer;
 
     ret = 0;
 
-    if (2 != argc) {
+    if (3 <= argc) {
         ret = 1;
         fprintf(stderr, "usage: %s [fari file]\n", argv[0]);
         goto exit;
     }
+
+    if (2 == argc)
+        filename = argv[1];
 
     fari = fari_create();
     if (NULL == fari) {
@@ -33,7 +37,7 @@ int main(int argc, char **argv)
         goto exit;
     }
 
-    if (0 >= fari_read(argv[1], &buffer)) {
+    if (0 >= fari_read(filename, &buffer)) {
         ret = 1;
         fprintf(stderr, "\t-> fari file reading failed\n");
         goto free_fari;
@@ -41,21 +45,22 @@ int main(int argc, char **argv)
 
     if (fari_analyse(fari, buffer)) {
         ret = 1;
-        fprintf(stderr, "\t-> fari file analysis failed\n");
+        fprintf(stderr, "\t-> fari analysis failed\n");
         goto free_all;
     }
 
-    /* XXX: debug */
-    printf("executable : \"%s\"\n", fari->executable);
-    printf("librairies : %s \n", fari->libs);
-    printf("flags : %s \n", fari->flags);
-    for (int i = 0; i < fari->sources_count; ++i) {
-        printf("%d sources : %s \n",i+1, (fari->sources)[i]);
+    if (fari_check(fari)) {
+        ret = 1;
+        fprintf(stderr, "\t-> fari checking failed\n");
+        goto free_all;
     }
-    for (int i = 0; i < fari->headers_count; ++i) {
-        printf("%d headers : %s \n",i+1, (fari->headers)[i]);
+
+    if (fari_compile(fari)) {
+        ret = 1;
+        fprintf(stderr, "\t-> fari compilation failed\n");
     }
-    /* XXX: end of debug */
+
+    printf("Compilation terminée avec succès !\n");
 
 free_all:
     free(buffer);

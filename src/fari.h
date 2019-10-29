@@ -9,16 +9,18 @@
 #ifndef _FARI_H
 #define _FARI_H
 
-#define FARI_PATH_MAX 4096 /* TODO: POSIX ? */
+#define FARI_PATH_MAX 4096 /* POSIX */
 
 struct fari {
     char *executable;
-    char *flags;
-    char *libs;
-    int sources_count;
-    int headers_count;
+    char **flags;
+    char **libs;
     char **sources;
     char **headers;
+    int flags_count;
+    int libs_count;
+    int sources_count;
+    int headers_count;
 };
 
 struct fari *fari_create();
@@ -26,5 +28,7 @@ void fari_free(struct fari *fari);
 /* counts bytes read */
 int fari_read(const char *filename, char **buffer);
 int fari_analyse(struct fari *fari, const char *buffer);
+int fari_check(struct fari *fari);
+int fari_compile(struct fari *fari);
 
 #endif /* _FARI_H */
