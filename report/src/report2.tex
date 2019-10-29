@@ -1,0 +1,46 @@
+%!TEX program = xelatex
+
+\documentclass{crr}
+
+\entite{Telecom Nancy}
+\equipe{LAGARDE - JACOTOT}
+\projet{RS1}
+
+\date{23 octobre 2019} % Respecter le format suivant : «1 janvier 2019»
+\lieu{TELECOM Nancy, S0.7}
+\heure{16h00} % Respecter le format suivant : «13h45»
+\duree{1} % La durée est en heure
+\motif{Réunion technique}
+
+\begin{reunion}
+        \begin{contexte}
+                \begin{participants}
+                        \begin{presents}
+                                \present{Henry Lagarde}
+                                \present[redacteur]{Louis Jacotot}
+                        \end{presents}
+                        %\begin{excuses}
+                                %\excuse{}
+                        %\end{excuses}
+                        %\begin{nonexcuses}
+                                %\nonexcuse{}
+                        %\end{nonexcuses}
+                \end{participants}
+                \approbation
+        \end{contexte}
+        \begin{ordredujour}
+                \ajouter{Discussion technique}
+        \end{ordredujour}
+        \begin{echanges}
+                \ajouter{Henry Lagarde présente le travaille qu'il a effectué}
+                \ajouter{Les membres se répartissent le travail à effectuer
+                pendant la semaine de vacances}
+        \end{echanges}
+        \begin{decisions}
+                \ajouter{Louis Jacotot s'occupe de la création des processus
+                fils et de l'exécution de \emph{gcc}}
+                \ajouter{Henry Lagarde planifie l'intégration des premières
+                options proposées}
+        \end{decisions}
+\end{reunion}
+
