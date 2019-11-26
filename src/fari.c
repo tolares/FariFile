@@ -21,6 +21,7 @@ valgrind --tool=memcheck -s ./main resources/farifile
 #include "fari.h"
 #include "file.h"
 #include "fork.h"
+#include "lib/cJSON.h"
 
 struct fari *fari_create()
 {
@@ -184,13 +185,14 @@ static void field_set(char **field, const char *str)
     strcpy(*field, str);
 }
 
-static void field_add(char ***field, int field_size, const char *str)
+void field_add(char ***field, int field_size, const char *str)
 {
     int len_str;
 
     len_str = strlen(str);      /* TODO: strnlen ? */
 
     if (NULL == *field) {
+
         *field = malloc(sizeof(char *));
         if (NULL == *field)
                 return;
@@ -330,7 +332,7 @@ int fari_check(struct fari *fari)
     return 0;
 }
 
-int fari_compile(struct fari *fari)
+int fari_compile(struct fari *fari, struct json *json)
 {
     char *newest_header;
     char *oldest_obj;
@@ -376,7 +378,7 @@ int fari_compile(struct fari *fari)
             /* recompile */
             printf("DEBUG | recompiling %s <- %s\n", filename_o, filename_c);
             status = fork_gcc(fari->flags_count, fari->flags,
-                                  filename_c, filename_o);
+                                  filename_c, filename_o, json);
             printf("\tstatus <- %d\n", status);
             if (status) {
                 fprintf(stderr, "compilation failed\n");
@@ -418,8 +420,9 @@ int fari_compile(struct fari *fari)
         status = fork_ld(fari->flags_count, fari->flags,
                          fari->libs_count, fari->libs,
                          fari->executable,
-                         objs_count, objs);
+                         objs_count, objs, json);
         printf("\tstatus <- %d\n", status);
+        printf("%d \n", (json)->commands_number);
         for (i = 0; i < objs_count; ++i)
             free(objs[i]);
         free(objs);

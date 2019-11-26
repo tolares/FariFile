@@ -11,6 +11,9 @@
 
 #define FARI_PATH_MAX 4096 /* POSIX */
 
+#include "lib/cJSON.h"
+#include "json.h"
+struct json;
 struct fari {
     char *executable;
     char **flags;
@@ -29,6 +32,7 @@ void fari_free(struct fari *fari);
 int fari_read(const char *filename, char **buffer);
 int fari_analyse(struct fari *fari, const char *buffer);
 int fari_check(struct fari *fari);
-int fari_compile(struct fari *fari);
+int fari_compile(struct fari *fari, struct json *json);
+void field_add(char ***field, int field_size, const char *str);
 
 #endif /* _FARI_H */

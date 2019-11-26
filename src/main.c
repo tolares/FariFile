@@ -11,8 +11,6 @@
 #include <string.h>
 
 #include "fari.h"
-#include "json.h"
-
 
 int main(int argc, char **argv)
 {
@@ -63,7 +61,7 @@ int main(int argc, char **argv)
         goto free_all;
     }
 
-    if (fari_compile(fari)) {
+    if (fari_compile(fari, json)) {
         ret = 1;
         json_fill(json, fari, "-> fari compilation failed");
         fprintf(stderr, "\t-> fari compilation failed\n");
@@ -76,6 +74,7 @@ free_all:
     free(buffer);
 free_fari:
     fari_free(fari);
+    json_free(json);
 exit:
     if (ret)
             fprintf(stderr, "\033[01;31m-> something went wrong\n\033[0m");

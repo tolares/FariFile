@@ -6,7 +6,6 @@
 #define _JSON_H
 
 
-#include "fari.h"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,12 +13,18 @@
 
 #include "fari.h"
 #include "lib/cJSON.h"
-
-struct json {
+struct fari;
+typedef struct json {
     cJSON *root;
-};
+    char** commands;
+    char* linking_errors;
+    char ** commands_compilation;
+    int compilation_numbers;
+    char* compilation_errors;
+    int commands_number;
+} json_t;
 
-struct json *json_create();
-void json_free(struct json *json);
-void json_fill(struct json *json, struct fari *fari, char* message);
+json_t *json_create();
+void json_free(json_t *json);
+void json_fill(json_t *json, struct fari *fari, char *message);
 #endif
