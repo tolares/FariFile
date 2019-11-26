@@ -376,7 +376,7 @@ int fari_compile(struct fari *fari, struct json *json)
             file_newer_than(filename_c, filename_o) ||
             recompile_all) {
             /* recompile */
-            printf("DEBUG | recompiling %s <- %s\n", filename_o, filename_c);
+            /* printf("DEBUG | recompiling %s <- %s\n", filename_o, filename_c); */
             status = fork_gcc(fari->flags_count, fari->flags,
                                   filename_c, filename_o, json);
             printf("\tstatus <- %d\n", status);
@@ -416,7 +416,7 @@ int fari_compile(struct fari *fari, struct json *json)
             filename_o = file_change_extension(filename_c, "o");
             objs[i] = filename_o;
         }
-        printf("DEBUG | relinking %s\n", fari->executable);
+        /* printf("DEBUG | relinking %s\n", fari->executable); */
         status = fork_ld(fari->flags_count, fari->flags,
                          fari->libs_count, fari->libs,
                          fari->executable,

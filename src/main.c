@@ -18,8 +18,10 @@ int main(int argc, char **argv)
     const char *filename = "farifile";
     struct fari *fari;
     char *buffer;
+
     struct json *json;
     json = json_create();
+
     ret = 0;
 
     if (3 <= argc) {
@@ -42,7 +44,6 @@ int main(int argc, char **argv)
         ret = 1;
         fprintf(stderr, "\t-> fari file reading failed\n");
         json_fill(json, fari, "-> fari reading failed");
-
         goto free_fari;
     }
 
@@ -50,7 +51,6 @@ int main(int argc, char **argv)
         ret = 1;
         fprintf(stderr, "\t-> fari analysis failed\n");
         json_fill(json, fari, "-> fari analysis failed");
-
         goto free_all;
     }
 
