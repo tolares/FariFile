@@ -123,7 +123,8 @@ static int read_token(char *c, const char *buffer, int *pos)
         case 'C':
         case 'E':
         case 'F':
-        case 'H':       return 0; break;
+        case 'H':
+        case 'J':       return 0; break;
         default:        return 1; break;
         }
     }
@@ -212,12 +213,16 @@ void field_add(char ***field, int field_size, const char *str)
 int fari_analyse(struct fari *fari, const char *buffer)
 {
     int seen_executable;
+    int seen_c;
+    int seen_java;
     int line, line_pos;
     int pos;
     char c;
     char str[FARI_PATH_MAX];
 
     seen_executable = 0;
+    seen_c = 0;
+    seen_java = 0;
     line = 1;
     line_pos = 0;
     pos = 0;
@@ -237,6 +242,11 @@ int fari_analyse(struct fari *fari, const char *buffer)
                 }
                 break;
             case 'C':
+                if (seen_java) {
+                    fprintf(stderr, "fari file contains C and Java\n");
+                    return 1;
+                }
+                seen_c = 1;
                 while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
                     read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
@@ -271,10 +281,28 @@ int fari_analyse(struct fari *fari, const char *buffer)
                 }
                 break;
             case 'H':
+                if (seen_java) {
+                    fprintf(stderr, "fari file contains C and Java\n");
+                    return 1;
+                }
+                seen_c = 1;
                 while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
                     read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
                     field_add(&fari->headers, fari->headers_count++, str);
+                }
+                break;
+            case 'J':
+                if (seen_c) {
+                    fprintf(stderr, "fari file contains C and Java\n");
+                    return 1;
+                }
+                seen_java = 1;
+                fari->is_java = 1;
+                while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
+                    read_spaces(buffer, &pos);
+                    read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
+                    field_add(&fari->sources, fari->sources_count++, str);
                 }
                 break;
             default: break;
@@ -301,19 +329,30 @@ int fari_analyse(struct fari *fari, const char *buffer)
         return 1;
     }
 
+    if (!seen_c && !seen_java) {
+        fprintf(stderr, "fari file does not contain source file\n");
+        return 1;
+    }
+
     return 0;
 }
 
 int fari_check(struct fari *fari)
 {
     int i;
+    char *src_ext;
+
+    if (!fari->is_java)
+        src_ext = "c";
+    else
+        src_ext = "java";
 
     for (i = 0; i < fari->sources_count; ++i) {
         if (!file_exists(fari->sources[i])) {
             fprintf(stderr, "file \"%s\" does not exist\n", fari->sources[i]);
             return 1;
         }
-        if (!file_has_extension(fari->sources[i], "c")) {
+        if (!file_has_extension(fari->sources[i], src_ext)) {
             fprintf(stderr, "file \"%s\" is not a source file\n", fari->sources[i]);
             return 1;
         }
@@ -344,11 +383,17 @@ int fari_compile(struct fari *fari, struct json *json)
     char **objs;
     int i;
     int status;
+    char *obj_ext;
 
     newest_header = NULL;
     oldest_obj = NULL;
     recompile_all = 0;
     newest_obj = NULL;
+
+    if (!fari->is_java)
+        obj_ext = "o";
+    else
+        obj_ext = "class";
 
     for (i = 0; i < fari->headers_count; ++i) {
         if (!newest_header || file_newer_than(fari->headers[i], newest_header))
@@ -356,7 +401,7 @@ int fari_compile(struct fari *fari, struct json *json)
     }
     for (i = 0; i < fari->sources_count; ++i) {
         filename_c = fari->sources[i];
-        filename_o = file_change_extension(filename_c, "o");
+        filename_o = file_change_extension(filename_c, obj_ext);
         if (!oldest_obj || file_newer_than(oldest_obj, filename_o)) {
             free(oldest_obj);
             oldest_obj = filename_o;
@@ -369,7 +414,7 @@ int fari_compile(struct fari *fari, struct json *json)
 
     for (i = 0; i < fari->sources_count; ++i) {
         filename_c = fari->sources[i];
-        filename_o = file_change_extension(filename_c, "o");
+        filename_o = file_change_extension(filename_c, obj_ext);
         if (NULL == filename_o)
             return 1;
         if (!file_exists(filename_o) ||
@@ -377,8 +422,11 @@ int fari_compile(struct fari *fari, struct json *json)
             recompile_all) {
             /* recompile */
             /* printf("DEBUG | recompiling %s <- %s\n", filename_o, filename_c); */
-            status = fork_gcc(fari->flags_count, fari->flags,
+            if (!fari->is_java)
+                status = fork_gcc(fari->flags_count, fari->flags,
                                   filename_c, filename_o, json);
+            else
+                status = fork_javac(filename_c, filename_o);
             printf("\tstatus <- %d\n", status);
             if (status) {
                 fprintf(stderr, "compilation failed\n");
@@ -394,7 +442,7 @@ int fari_compile(struct fari *fari, struct json *json)
 
     for (i = 0; i < fari->sources_count; ++i) {
         filename_c = fari->sources[i];
-        filename_o = file_change_extension(filename_c, "o");
+        filename_o = file_change_extension(filename_c, obj_ext);
         if (!newest_obj || file_newer_than(filename_o, newest_obj)) {
             free(newest_obj);
             newest_obj = filename_o;
@@ -403,8 +451,8 @@ int fari_compile(struct fari *fari, struct json *json)
         }
     }
 
-    if (!file_exists(fari->executable) ||
-        file_newer_than(newest_obj, fari->executable)) {
+    if (!fari->is_java && (!file_exists(fari->executable) ||
+        file_newer_than(newest_obj, fari->executable))) {
         /* relink */
         objs_count = fari->sources_count;
         objs = malloc(fari->sources_count * sizeof(char *));
@@ -413,7 +461,7 @@ int fari_compile(struct fari *fari, struct json *json)
         }
         for (i = 0; i < fari->sources_count; ++i) {
             filename_c = fari->sources[i];
-            filename_o = file_change_extension(filename_c, "o");
+            filename_o = file_change_extension(filename_c, obj_ext);
             objs[i] = filename_o;
         }
         /* printf("DEBUG | relinking %s\n", fari->executable); */
