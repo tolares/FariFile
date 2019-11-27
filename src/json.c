@@ -29,7 +29,7 @@ void json_fill(json_t *json, struct fari *fari, char *message){
     cJSON *compilation;
     cJSON *linking;
     FILE *stream;
-    stream= fopen("test.json", "w");
+    stream= fopen("logs.json", "w");
 
     compilation = cJSON_CreateObject();
     linking = cJSON_CreateObject();
