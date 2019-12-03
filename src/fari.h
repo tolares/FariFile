@@ -28,7 +28,7 @@ struct fari {
     int libs_count;
     int sources_count;
     int headers_count;
-    struct CH ** sources_headers;
+    int is_java;        /* 0: C, else: Java */
 };
 
 

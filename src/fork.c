@@ -133,6 +133,41 @@ int fork_ld(int flags_count, char **flags, int libs_count, char **libs,
     }
 }
 
+int fork_javac(const char *filename_c, const char *filename_o) {
+    int pid;
+    int wstatus;
+    char **pargv;
+    int i;
+
+    /* execvp */
+    pargv = malloc(3 * sizeof(char *));
+    pargv[0] = malloc((strlen(JAVAC) + 1) * sizeof(char));
+    pargv[1] = malloc((strlen(filename_c) + 1) * sizeof(char));
+    if (!pargv)
+        exit(1);
+    for (i = 0; i < 2; ++i) {
+        if (!pargv[i])
+            exit(1);
+    }
+    strcpy(pargv[0], JAVAC);
+    strcpy(pargv[1], filename_c);
+    pargv[2] = NULL;
+    pid = fork();
+    if (0 > pid) {
+        return 1;
+    } else if (0 == pid) {
+        execvp(JAVAC, pargv);
+        return 1; /* impossible */
+    } else {
+        /* wait for status code */
+        wait(&wstatus);
+        if (WIFEXITED(wstatus))
+            return WEXITSTATUS(wstatus);
+        else
+            return 1;
+    }
+}
+
 char* get_command( char **pargv, const int size) {
     char *final;
     int n, i;

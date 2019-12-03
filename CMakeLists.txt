@@ -1,0 +1,13 @@
+add_executable(RS
+        src/fari.c
+        src/fari.h
+        src/main.c
+        src/file.c
+        src/file.h
+        src/fork.c
+        src/fork.h
+        src/lib/cJSON.c
+        src/lib/cJSON.h
+        src/json.c
+        src/json.h
+        src/main.h)
