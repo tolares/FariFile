@@ -50,10 +50,9 @@ int fork_gcc(int flags_count, char **flags,
         execvp(GCC, pargv);
         return 1; /* impossible */
     } else {
-
         final = get_command(pargv, 5 + flags_count);
         read(fd[1], buffer, 65536);
-        strcpy(json->linking_errors,buffer);
+        strcpy(json->compilation_errors,buffer);
         field_add(&json->commands_compilation, json->compilation_numbers++, final);
         /* wait for status code */
         wait(&wstatus);
@@ -71,7 +70,7 @@ int fork_ld(int flags_count, char **flags, int libs_count, char **libs,
     char **pargv;
     int i;
     char* final;
-    int fd[2];
+    int fd2[2];
 
     /*GCC Command*/
     pargv = malloc((4 + flags_count + libs_count + objs_count) * sizeof(char *));
@@ -107,20 +106,19 @@ int fork_ld(int flags_count, char **flags, int libs_count, char **libs,
     }
     pargv[3 + flags_count + objs_count + libs_count] = NULL;
 
-    pipe(fd);
+    pipe(fd2);
     char * buffer = malloc(65536 * sizeof(char));
     pid = fork();
     if (0 > pid) {
         return 1;
     } else if (0 == pid) {
-        dup2(fd[1],2);
+        dup2(fd2[1],2);
         /* execvp */
         execvp(GCC, pargv);
-        printf("cc\n");
         return 1; /* impossible */
     } else {
         final = get_command(pargv, 3 + flags_count + objs_count + libs_count);
-        read(fd[1], buffer, 65536);
+        read(fd2[1], buffer, 65536);
         strcpy(json->linking_errors,buffer);
         field_add(&json->commands, json->commands_number++, final);
         /* wait for status code */
