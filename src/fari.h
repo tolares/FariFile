@@ -14,6 +14,10 @@
 #include "lib/cJSON.h"
 #include "json.h"
 struct json;
+struct CH {
+    char** sources;
+    char** headers;
+};
 struct fari {
     char *executable;
     char **flags;
@@ -24,7 +28,10 @@ struct fari {
     int libs_count;
     int sources_count;
     int headers_count;
+    struct CH ** sources_headers;
 };
+
+
 
 struct fari *fari_create();
 void fari_free(struct fari *fari);

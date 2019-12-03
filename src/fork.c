@@ -53,7 +53,7 @@ int fork_gcc(int flags_count, char **flags,
 
         final = get_command(pargv, 5 + flags_count);
         read(fd[1], buffer, 65536);
-        memcpy(json->linking_errors,buffer, 65536);
+        strcpy(json->linking_errors,buffer);
         field_add(&json->commands_compilation, json->compilation_numbers++, final);
         /* wait for status code */
         wait(&wstatus);
@@ -116,11 +116,12 @@ int fork_ld(int flags_count, char **flags, int libs_count, char **libs,
         dup2(fd[1],2);
         /* execvp */
         execvp(GCC, pargv);
+        printf("cc\n");
         return 1; /* impossible */
     } else {
         final = get_command(pargv, 3 + flags_count + objs_count + libs_count);
         read(fd[1], buffer, 65536);
-        memcpy(json->linking_errors,buffer, 65536);
+        strcpy(json->linking_errors,buffer);
         field_add(&json->commands, json->commands_number++, final);
         /* wait for status code */
         wait(&wstatus);
