@@ -13,6 +13,7 @@ gcc -std=c90 -pedantic-errors -Wall -Wextra -Wswitch-default -Wwrite-strings \
 valgrind --tool=memcheck -s ./main resources/farifile
 */
 
+#include <glob.h>       /* POSIX.1-2008 */
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -219,6 +220,8 @@ int fari_analyse(struct fari *fari, const char *buffer)
     int pos;
     char c;
     char str[FARI_PATH_MAX];
+    glob_t glob_buf;
+    size_t ut;
 
     seen_executable = 0;
     seen_c = 0;
@@ -226,6 +229,7 @@ int fari_analyse(struct fari *fari, const char *buffer)
     line = 1;
     line_pos = 0;
     pos = 0;
+    glob_buf.gl_offs = 0;       /* 0 slot */
 
     while (!read_token(&c, buffer, &pos)) {
         switch (c) {
@@ -250,7 +254,17 @@ int fari_analyse(struct fari *fari, const char *buffer)
                 while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
                     read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
-                    field_add(&fari->sources, fari->sources_count++, str);
+                    /* field_add(&fari->sources, fari->sources_count++, str); */
+                    glob(str, GLOB_ERR, NULL, &glob_buf);
+                    if (glob_buf.gl_pathc > 1)
+                            printf("DEBUG | globbing %s ...\n", str);
+                    for (ut = 0; ut < glob_buf.gl_pathc; ++ut) {
+                            if (glob_buf.gl_pathc > 1)
+                                printf("\t globbing %s\n", glob_buf.gl_pathv[ut]);
+                            field_add(&fari->sources, fari->sources_count++, glob_buf.gl_pathv[ut]);
+                    }
+                    globfree(&glob_buf);
+                    glob_buf.gl_offs = 0;
                 }
                 break;
             case 'E':
@@ -289,7 +303,18 @@ int fari_analyse(struct fari *fari, const char *buffer)
                 while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
                     read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
-                    field_add(&fari->headers, fari->headers_count++, str);
+                    /* field_add(&fari->headers, fari->headers_count++, str); */
+                    glob(str, GLOB_ERR, NULL, &glob_buf);
+                    if (glob_buf.gl_pathc > 1)
+                            printf("DEBUG | globbing %s ...\n", str);
+                    for (ut = 0; ut < glob_buf.gl_pathc; ++ut) {
+                            if (glob_buf.gl_pathc > 1)
+                                    printf("\t globbing %s\n", glob_buf.gl_pathv[ut]);
+                            field_add(&fari->headers, fari->headers_count++, glob_buf.gl_pathv[ut]);
+                    }
+                    globfree(&glob_buf);
+                    glob_buf.gl_offs = 0;
+
                 }
                 break;
             case 'J':
@@ -302,7 +327,17 @@ int fari_analyse(struct fari *fari, const char *buffer)
                 while((buffer[pos] != '\x0a') && (buffer[pos] != '\x0d')){
                     read_spaces(buffer, &pos);
                     read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
-                    field_add(&fari->sources, fari->sources_count++, str);
+                    /* field_add(&fari->sources, fari->sources_count++, str); */
+                    glob(str, GLOB_ERR, NULL, &glob_buf);
+                    if (glob_buf.gl_pathc > 1)
+                            printf("DEBUG | globbing %s ...\n", str);
+                    for (ut = 0; ut < glob_buf.gl_pathc; ++ut) {
+                            if (glob_buf.gl_pathc > 1)
+                                printf("\t globbing %s\n", glob_buf.gl_pathv[ut]);
+                            field_add(&fari->sources, fari->sources_count++, glob_buf.gl_pathv[ut]);
+                    }
+                    globfree(&glob_buf);
+                    glob_buf.gl_offs = 0;
                 }
                 break;
             default: break;
@@ -421,7 +456,7 @@ int fari_compile(struct fari *fari, struct json *json)
             file_newer_than(filename_c, filename_o) ||
             recompile_all) {
             /* recompile */
-            /* printf("DEBUG | recompiling %s <- %s\n", filename_o, filename_c); */
+            printf("DEBUG | recompiling %s <- %s\n", filename_o, filename_c);
             if (!fari->is_java)
                 status = fork_gcc(fari->flags_count, fari->flags,
                                   filename_c, filename_o, json);

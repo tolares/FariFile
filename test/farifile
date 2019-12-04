@@ -1,7 +1,8 @@
 # My first fari file :)
 
 E my_really_great_program
-C f1.c f2.c
+# C f1.c f2.c
+C *.c
 H f1.h
 F -Wall -Wextra
 B -lm
