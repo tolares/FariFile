@@ -272,6 +272,10 @@ int fari_analyse(struct fari *fari, const char *buffer)
                     fprintf(stderr, "fari file contains 'E' twice\n");
                     return 1;
                 }
+                if (seen_java) {
+                    fprintf(stderr, "fari file contains E and Java\n");
+                    return 1;
+                }
                 seen_executable = 1;
                 read_spaces(buffer, &pos);
                 read_str(&str[0], sizeof(str) / sizeof(char), buffer, &pos);
@@ -320,6 +324,10 @@ int fari_analyse(struct fari *fari, const char *buffer)
             case 'J':
                 if (seen_c) {
                     fprintf(stderr, "fari file contains C and Java\n");
+                    return 1;
+                }
+                if (seen_executable) {
+                    fprintf(stderr, "fari file contains E and Java\n");
                     return 1;
                 }
                 seen_java = 1;
@@ -406,7 +414,7 @@ int fari_check(struct fari *fari)
     return 0;
 }
 
-int fari_compile(struct fari *fari, struct json *json)
+int fari_compile(struct fari *fari, struct json *json, int continuation)
 {
     char *newest_header;
     char *oldest_obj;
@@ -419,11 +427,13 @@ int fari_compile(struct fari *fari, struct json *json)
     int i;
     int status;
     char *obj_ext;
+    int continuation_error;
 
     newest_header = NULL;
     oldest_obj = NULL;
     recompile_all = 0;
     newest_obj = NULL;
+    continuation_error = 0;
 
     if (!fari->is_java)
         obj_ext = "o";
@@ -464,10 +474,15 @@ int fari_compile(struct fari *fari, struct json *json)
                 status = fork_javac(filename_c, filename_o);
             printf("\tstatus <- %d\n", status);
             if (status) {
-                fprintf(stderr, "compilation failed\n");
-                free(filename_o);
-                free(oldest_obj);
-                return 1;
+                if (continuation) {
+                    printf("compilation failed... CONTINUING...\n");
+                    continuation_error = 1;
+                } else {
+                    fprintf(stderr, "compilation failed\n");
+                    free(filename_o);
+                    free(oldest_obj);
+                    return 1;
+                }
             }
         }
         free(filename_o); /* bof... */
@@ -510,13 +525,18 @@ int fari_compile(struct fari *fari, struct json *json)
             free(objs[i]);
         free(objs);
         if (status) {
-            fprintf(stderr, "linking failed\n");
-            free(newest_obj);
-            return 1;
+            if (continuation) {
+                printf("linking failed... CONTINUING...\n");
+                continuation_error = 1;
+            } else {
+                fprintf(stderr, "linking failed\n");
+                free(newest_obj);
+                return 1;
+            }
         }
     }
 
     free(newest_obj);
 
-    return 0;
+    return continuation_error;
 }

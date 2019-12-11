@@ -35,15 +35,15 @@ void json_fill(json_t *json, struct fari *fari, char *message){
 
     compilation = cJSON_CreateObject();
     linking = cJSON_CreateObject();
-    cJSON_AddItemToObject(json->root, "source", cJSON_CreateStringArray((const char **) fari->sources, fari->sources_count));
+    cJSON_AddItemToObject(json->root, "sources", cJSON_CreateStringArray((const char **) fari->sources, fari->sources_count));
     cJSON_AddItemToObject(json->root, "headers", cJSON_CreateStringArray((const char **) fari->headers, fari->headers_count));
     cJSON_AddItemToObject(json->root, "librairies", cJSON_CreateStringArray((const char **) fari->libs, fari->libs_count));
     cJSON_AddItemToObject(json->root, "executable_name", cJSON_CreateString(fari->executable));
     cJSON_AddItemToObject(json->root, "fari_error_msg", cJSON_CreateString(" "));
     if(json->commands_number == 0){
-        cJSON_AddItemToObject(linking, "command",cJSON_CreateString(" "));
+        cJSON_AddItemToObject(linking, "commands",cJSON_CreateString(" "));
     }else{
-        cJSON_AddItemToObject(linking, "command",cJSON_CreateString((const char *) json->commands[0]));
+        cJSON_AddItemToObject(linking, "commands",cJSON_CreateString((const char *) json->commands[0]));
     }
     if(json->compilation_numbers == 0){
         cJSON_AddItemToObject(compilation, "commands",cJSON_CreateString(" "));

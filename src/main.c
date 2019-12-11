@@ -23,29 +23,37 @@ int main(int argc, char **argv)
     struct json *json;
     json = json_create();
 
+    continuation = 0;
     ret = 0;
 
-    if (4 <= argc) {
+    switch (argc) {
+    case 1:
+        break;
+    case 2:
+        if (!strcmp(argv[1], "-k"))
+            continuation = 1;
+        else
+            filename = argv[1];
+        break;
+    case 3:
+        if (!strcmp(argv[1], "-k")) {
+            continuation = 1;
+            filename = argv[2];
+        } else if (!strcmp(argv[2], "-k")) {
+            continuation = 1;
+            filename = argv[1];
+        } else {
+            filename = argv[1];
+        }
+        break;
+    default:
         ret = 1;
-        fprintf(stderr, "usage: %s [fari file]\n", argv[0]);
+        fprintf(stderr, "usage: %s [-k] farifile\n", argv[0]);
         goto exit;
+        break;
     }
 
-    if (3 <= argc){
-        filename = argv[1];
-        continuation =0;
-        if(2 == argc){
-            if(strcmp(argv[2],"k")){
-                continuation = 1;
-            }else{
-                ret = 1;
-                fprintf(stderr, "usage: %s [fari file] [options: k]\n", argv[0]);
-                goto exit;
-            }
-        }
-    }
     fari = fari_create();
-    fari->continuation_on_error = continuation;
     if (NULL == fari) {
         ret = 1;
         fprintf(stderr, "memory allocation failed\n");
@@ -72,10 +80,11 @@ int main(int argc, char **argv)
         json_fill(json, fari, "-> fari checking failed");
         goto free_all;
     }
-    if (fari_compile(fari, json) && fari->continuation_on_error) {
+    if (fari_compile(fari, json, continuation)) {
         ret = 1;
         json_fill(json, fari, "-> fari compilation failed");
         fprintf(stderr, "\t-> fari compilation failed\n");
+        goto free_all;
     }
 
     json_fill(json, fari, "Compilation terminée avec succès !");
@@ -85,8 +94,8 @@ free_all:
     free(buffer);
 free_fari:
     fari_free(fari);
-    json_free(json);
 exit:
+    json_free(json);
     if (ret)
             fprintf(stderr, "\033[01;31m-> something went wrong\n\033[0m");
     return ret;

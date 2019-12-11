@@ -29,7 +29,6 @@ struct fari {
     int sources_count;
     int headers_count;
     int is_java; /* 0: C, else: Java */
-    int continuation_on_error; /* 0: False, else: 1 */
 };
 
 
@@ -40,7 +39,7 @@ void fari_free(struct fari *fari);
 int fari_read(const char *filename, char **buffer);
 int fari_analyse(struct fari *fari, const char *buffer);
 int fari_check(struct fari *fari);
-int fari_compile(struct fari *fari, struct json *json);
+int fari_compile(struct fari *fari, struct json *json, int continuation);
 void field_add(char ***field, int field_size, const char *str);
 
 #endif /* _FARI_H */
