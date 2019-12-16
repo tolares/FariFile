@@ -38,6 +38,7 @@ void json_fill(json_t *json, struct fari *fari, char *message){
     cJSON_AddItemToObject(json->root, "sources", cJSON_CreateStringArray((const char **) fari->sources, fari->sources_count));
     cJSON_AddItemToObject(json->root, "headers", cJSON_CreateStringArray((const char **) fari->headers, fari->headers_count));
     cJSON_AddItemToObject(json->root, "librairies", cJSON_CreateStringArray((const char **) fari->libs, fari->libs_count));
+    cJSON_AddItemToObject(json->root, "flags", cJSON_CreateStringArray((const char **) fari->flags, fari->flags_count));
     cJSON_AddItemToObject(json->root, "executable_name", cJSON_CreateString(fari->executable));
     cJSON_AddItemToObject(json->root, "fari_error_msg", cJSON_CreateString(" "));
     if(json->commands_number == 0){
