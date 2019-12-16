@@ -1,0 +1,41 @@
+%!TEX program = xelatex
+
+\documentclass{crr}
+
+\entite{Telecom Nancy}
+\equipe{LAGARDE - JACOTOT}
+\projet{RS1}
+
+\date{14 décembre 2019} % Respecter le format suivant : «1 janvier 2019»
+\lieu{Réunion à distance}
+\heure{19h00} % Respecter le format suivant : «13h45»
+\duree{1} % La durée est en heure
+\motif{Réunion technique}
+
+\begin{reunion}
+        \begin{contexte}
+                \begin{participants}
+                        \begin{presents}
+                                \present{Henry Lagarde}
+                                \present[redacteur]{Louis Jacotot}
+                        \end{presents}
+                        %\begin{excuses}
+                                %\excuse{}
+                        %\end{excuses}
+                        %\begin{nonexcuses}
+                                %\nonexcuse{}
+                        %\end{nonexcuses}
+                \end{participants}
+                \approbation
+        \end{contexte}
+        \begin{ordredujour}
+                \ajouter{Avancement du projet}
+                \ajouter{Correction des fonctionnalités}
+        \end{ordredujour}
+        \begin{echanges}
+                \ajouter{Les membres corrigent la fonctionnalité continuation
+                sur erreur et java}
+                \ajouter{Les membres corrigent en partie la fonctionnalité Json}
+        \end{echanges}
+\end{reunion}
+
