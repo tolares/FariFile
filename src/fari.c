@@ -367,13 +367,13 @@ int fari_analyse(struct fari *fari, const char *buffer)
         return 1;
     }
 
-    if (!seen_executable) {
-        fprintf(stderr, "fari file does not contain 'E'\n");
+    if (!seen_c && !seen_java) {
+        fprintf(stderr, "fari file does not contain source file\n");
         return 1;
     }
 
-    if (!seen_c && !seen_java) {
-        fprintf(stderr, "fari file does not contain source file\n");
+    if (seen_c && !seen_executable) {
+        fprintf(stderr, "fari file does not contain 'E'\n");
         return 1;
     }
 
