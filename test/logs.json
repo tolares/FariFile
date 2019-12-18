@@ -1,1 +1,0 @@
-{"sources":["f1.c","f2.c"],"librairies":["-lm"],"flags":["-Wall","-Wextra","-g"],"executable_name":"my_really_great_program","fari_error_msg":" ","compilation":{"commands":" ","error_msg":""},"linking":{"commands":"gcc -Wall -Wextra -g -o my_really_great_program f1.o f2.o -lm","error_msg":""},"fari_msg":"Compilation terminée avec succès !"}
