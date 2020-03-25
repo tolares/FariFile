@@ -13,7 +13,7 @@
 ## Options
 
 * -k : Compilation on errors
-* <name> : Pass the name of the Farifile if none given will use farifile by default
+* < name > : Pass the name of the Farifile if none given will use farifile by default
 
 ## Usage
 
