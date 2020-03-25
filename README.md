@@ -1,23 +1,11 @@
-# Projet RS
-# Utilitaire système fari
+# FariFile compiler
 
-## Auteurs
+## Authors
 
-* [Louis JACOTOT](mailto:louis.jacotot@telecomnancy.eu)
-* [Henry LAGARDE](mailto:henry.lagarde@telecomnancy.eu)
+* [Louis JACOTOT](mailto:louis.jacotot@telecomnancy.net)
+* [Henry LAGARDE](mailto:henry.lagarde@telecomnancy.net)
 
-## Structure du dépôt
-
-* `report/` : Gestion de projet
-* `src/` : Code source
-
-## Gestion de projet
-
-Un compte rendu de projet est disponible dans `report/report.pdf`.
-
-Les comptes rendus de réunions sont disponibles dans `report/crr*.pdf`
-
-## Utilisation
+## Usage
 
 ```sh
 make
